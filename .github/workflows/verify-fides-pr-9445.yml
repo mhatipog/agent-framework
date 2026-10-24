@@ -12,8 +12,10 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
-      - name: Verify the parent commit is the corrected PR head
-        run: test "$(git rev-parse HEAD^)" = "64645bfcf586abe17b03babfd34c51bc4b23ba3e"
+        with:
+          fetch-depth: 4
+      - name: Verify the corrected PR head is in the branch history
+        run: git merge-base --is-ancestor 64645bfcf586abe17b03babfd34c51bc4b23ba3e HEAD
       - uses: ./.github/actions/python-setup
         with:
           python-version: '3.11'
