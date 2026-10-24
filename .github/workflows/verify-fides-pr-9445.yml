@@ -1,0 +1,32 @@
+name: Validate PR 9445 typing fixes on public fork
+on:
+  push:
+    branches:
+      - ci/verify-9445-typing-20261024
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  typechecks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify the parent commit is the corrected PR head
+        run: test "$(git rev-parse HEAD^)" = "64645bfcf586abe17b03babfd34c51bc4b23ba3e"
+      - uses: ./.github/actions/python-setup
+        with:
+          python-version: '3.11'
+          os: Linux
+      - name: Production Pyright and syntax
+        working-directory: python
+        run: uv run poe check-packages
+      - name: Test typing (Pyright, mypy, ty, zuban, pyrefly)
+        working-directory: python
+        run: uv run --locked --group tool-runtime python -m scripts.workspace_poe_tasks ci-test-typing
+      - name: Security runtime regressions and formatting
+        working-directory: python
+        run: |
+          uv run python -m pytest -q packages/core/tests/test_security.py
+          uv run ruff check packages/core/agent_framework/security.py packages/core/tests/test_security.py
+          uv run ruff format --check packages/core/agent_framework/security.py packages/core/tests/test_security.py
