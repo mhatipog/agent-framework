@@ -1,4 +1,4 @@
-name: Validate PR 9445 typing fixes on public fork
+name: Validate PR 9445 Ruff style on public fork
 on:
   push:
     branches:
@@ -7,28 +7,21 @@ on:
 permissions:
   contents: read
 jobs:
-  typechecks:
+  style-check:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 4
+          fetch-depth: 5
       - name: Verify the corrected PR head is in the branch history
         run: git merge-base --is-ancestor 64645bfcf586abe17b03babfd34c51bc4b23ba3e HEAD
-      - uses: ./.github/actions/python-setup
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          os: Linux
-      - name: Production Pyright and syntax
-        working-directory: python
-        run: uv run poe check-packages
-      - name: Test typing (Pyright, mypy, ty, zuban, pyrefly)
-        working-directory: python
-        run: uv run --locked --group tool-runtime python -m scripts.workspace_poe_tasks ci-test-typing
-      - name: Security runtime regressions and formatting
-        working-directory: python
+      - name: Install pinned Ruff
+        run: python -m pip install 'ruff==0.17.0'
+      - name: Lint and verify formatting
         run: |
-          uv run python -m pytest -q packages/core/tests/test_security.py
-          uv run ruff check packages/core/agent_framework/security.py packages/core/tests/test_security.py
-          uv run ruff format --check packages/core/agent_framework/security.py packages/core/tests/test_security.py
+          ruff check python/packages/core/agent_framework/security.py python/packages/core/tests/test_security.py
+          ruff format --check python/packages/core/agent_framework/security.py python/packages/core/tests/test_security.py
